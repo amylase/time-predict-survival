@@ -3,11 +3,22 @@ import random
 from typing import List, Tuple
 
 
+def normal_pdf(x: float, mu: float = 0, sigma: float = 1) -> float:
+    d = x - mu
+    t = d / (math.sqrt(2) * sigma)
+    return math.exp(-t**2) / (math.sqrt(2 * math.pi) * sigma)
+
+
 def normal_pdf_grad(x: float, mu: float = 0, sigma: float = 1) -> float:
     # d pdf / d mu
     d = x - mu
     t = d / (math.sqrt(2) * sigma)
     return (d * math.exp(-t**2)) / (math.sqrt(2 * math.pi) * sigma**3)
+
+
+def normal_sf(x: float, mu: float = 0, sigma: float = 1) -> float:
+    t = (x - mu) / (math.sqrt(2) * sigma)
+    return (math.erfc(t)) / 2
 
 
 def normal_sf_grad(x: float, mu: float = 0, sigma: float = 1) -> float:
@@ -47,20 +58,21 @@ def fit(ratings: List[float], times: List[float], censoreds: List[bool], rng: ra
             rating = ratings[order]
             logtime = math.log(times[order])
             censored = censoreds[order]
-            g_slope, g_intercept = 0, 0
             mu = slope * rating + intercept
             if censored:
-                grad = normal_sf_grad(logtime, mu)
+                d = normal_sf_grad(logtime, mu)
+                grad = 0 if d == 0 else normal_sf_grad(logtime, mu) / normal_sf(logtime, mu)
             else:
-                grad = normal_pdf_grad(logtime, mu)
-            g_slope += grad * rating
-            g_intercept += grad
+                d = normal_pdf_grad(logtime, mu)
+                grad = 0 if d == 0 else normal_pdf_grad(logtime, mu) / normal_pdf(logtime, mu)
+            g_slope = grad * rating
+            g_intercept = grad
             slope += g_slope * lr_slope
             intercept += g_intercept * lr_intercept
 
             slope = min(-1e-6, slope)
-        lr_slope *= 0.9
-        lr_intercept *= 0.9
+        lr_slope *= 0.99
+        lr_intercept *= 0.99
     return slope, intercept
 
 
