@@ -50,7 +50,9 @@ def fit(ratings: List[float], times: List[float], censoreds: List[bool], rng: ra
     slope, intercept = single_regression(uncensored_ratings, uncensored_logtimes)
     # todo: estimate variance or use known value first.
 
-    lr_slope, lr_intercept = 0.0000001, 0.001
+    lr_slope, lr_intercept = 0.01, 1
+    eps = 10 ** -10
+    r_slope, r_intercept = eps, eps
     for _iter in range(100):
         orders = list(range(n_items))
         rng.shuffle(orders)
@@ -67,12 +69,14 @@ def fit(ratings: List[float], times: List[float], censoreds: List[bool], rng: ra
                 grad = 0 if d == 0 else normal_pdf_grad(logtime, mu) / normal_pdf(logtime, mu)
             g_slope = grad * rating
             g_intercept = grad
-            slope += g_slope * lr_slope
-            intercept += g_intercept * lr_intercept
+            r_slope += g_slope ** 2
+            r_intercept += g_intercept ** 2
+            slope += g_slope * lr_slope * (r_slope ** -0.5)
+            intercept += g_intercept * lr_intercept * (r_intercept ** -0.5)
 
             slope = min(-1e-6, slope)
-        lr_slope *= 0.99
-        lr_intercept *= 0.99
+        # lr_slope *= 0.99
+        # lr_intercept *= 0.99
     return slope, intercept
 
 
