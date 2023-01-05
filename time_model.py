@@ -61,12 +61,12 @@ def fit(ratings: List[float], times: List[float], censoreds: List[bool], rng: ra
             uncensored_logtimes.append(math.log(time))
     slope, intercept = single_regression(uncensored_ratings, uncensored_logtimes)
 
-    # todo: estimate variance too.
     uncensored_predict_errors = []
     for rating, logtime in zip(uncensored_ratings, uncensored_logtimes):
         uncensored_predict_errors.append(rating * slope + intercept - logtime)
     sigma = statistics.stdev(uncensored_predict_errors)
 
+    # todo: may need to optimize hyperparameters
     lr_slope, lr_intercept, lr_sigma = 0.01, 1, 0.3
     eps = 10 ** -10
     r_slope, r_intercept, r_sigma = eps, eps, eps
